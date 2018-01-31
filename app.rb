@@ -32,11 +32,23 @@ class FamProductsUpdate < Sinatra::Base
     'hello Fam Brands'
   end
 
-  get '/marika_products/upload_csv' do
-    erb :'marika_products/upload_csv', layout: :'layouts/application'
+  get '/marika_products/upload_products_csv' do
+    erb :'marika_products/upload_products_csv', layout: :'layouts/application'
   end
 
-  post '/marika_products/upload_csv' do
-    MarikaProducts.new.update_all_products_from_csv(params[:attachment])
+  post '/marika_products/upload_products_csv' do
+    result = MarikaProducts.new.update_all_products_from_csv(params[:attachment])
+    flash[:success] = "#{result[:updated]} products updated and #{result[:not_updated]} did not update."
+    redirect '/marika_products/upload_products_csv'
+  end
+
+  get '/marika_products/upload_variants_csv' do
+    erb :'marika_products/upload_variants_csv', layout: :'layouts/application'
+  end
+
+  post '/marika_products/upload_variants_csv' do
+    result = MarikaProducts.new.add_variants_from_csv(params[:attachment])
+    flash[:success] = "#{result[:updated]} products updated and #{result[:not_updated]} did not update."
+    redirect '/marika_products/upload_variants_csv'
   end
 end

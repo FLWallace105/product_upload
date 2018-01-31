@@ -19,6 +19,7 @@ ActiveRecord::Schema.define(version: 20180130001045) do
     t.string "shopify_product_id"
     t.text "body_html"
     t.integer "status", default: 0
+    t.string "handle"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
