@@ -42,38 +42,28 @@ class MarikaProducts
   end
 
   def update_all_products_from_api
-    product_count = ShopifyAPI::Product.count
-    puts "We have #{product_count} products"
+    puts "We have #{MarikaProduct.count} products"
     updated_count = 0
     not_updated_count = 0
-    save_all_products
 
-    nb_pages = (product_count / 250.0).ceil
-    1.upto(nb_pages) do |page|
-      products = ShopifyAPI::Product.find(:all, :params => { limit: 250, page: page })
-      products.each do |product|
-        puts "#{product.id} | #{product.title} | #{product.published_at}"
-        local_product = MarikaProduct.find_by_shopify_product_id(product.id)
-        shopify_product = ShopifyAPI::Product.find(product.id)
-        body_html = product_metafields_html(product)
+    MarikaProduct.find_each do |local_product|
+      shopify_product = ShopifyAPI::Product.find(local_product.shopify_product_id)
+      body_html = product_metafields_html(shopify_product)
 
-        if body_html
-          shopify_product.body_html = body_html
-          if shopify_product.save
-            local_product.update(body_html: body_html, status: :updated)
-            updated_count += 1
-          else
-            not_updated_count += 1
-            local_product.update(status: :skipped)
-          end
+      if body_html
+        shopify_product.body_html = body_html
+        if shopify_product.save
+          local_product.update(body_html: body_html, status: :updated)
+          updated_count += 1
         else
-          local_product.update(status: :skipped)
           not_updated_count += 1
+          local_product.update(status: :skipped)
         end
+      else
+        local_product.update(status: :skipped)
+        not_updated_count += 1
       end
-      puts 'SLEEPING 3' # sleep to prevent 8 minute timeout?
-      sleep 3
-    end
+    end 
     puts "#{updated_count} PRODUCTS UPDATED"
     puts "#{not_updated_count} PRODUCTS DID NOT UPDATE"
   end

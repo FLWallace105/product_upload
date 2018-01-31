@@ -13,6 +13,12 @@ namespace :marika do
   task :update_all_products_from_api do |_t|
     MarikaProducts.new.update_all_products_from_api
   end
+
+  desc 'save all products'
+  task :save_all_products do |_t|
+    MarikaProducts.new.save_all_products
+    puts "#{MarikaProduct.count} PRODUCTS ARE IN THE DATABASE"
+  end
 end
 
 namespace :db do
