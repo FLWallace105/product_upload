@@ -88,11 +88,9 @@ class MarikaProducts
       next if row[0] == 'product_id' # skip the header
       local_product = MarikaProduct.find_by_handle(row[0].downcase)
 
-      # shopify_product = ShopifyAPI::Product.find(local_product.shopify_product_id)
+      shopify_product = ShopifyAPI::Product.find(local_product.shopify_product_id)
       body_html = csv_unordered_list(row)
-      # shopify_product.body_html = body_html
-
-      # shopify_product = ShopifyAPI::Product.find(8992544009) # this line is for test purposes only
+      shopify_product.body_html = body_html
 
       if shopify_product.save
         local_product.update(body_html: body_html, status: :updated)
@@ -113,21 +111,33 @@ class MarikaProducts
 
     CSV.foreach(file["tempfile"].path, headers: true, header_converters: :symbol) do |row|
       raw_args = row.to_hash
-      new_args = raw_args.map {|key, value| [key_map[key], value] }.to_h
-      new_args.slice(
+      new_keys_args = raw_args.map { |key, value| [key_map[key], value] }.to_h
+      needed_args = new_keys_args.slice(
         :title,
-        :price
+        :price,
+        :sku,
+        :inventory_policy,
+        :compare_at_price,
+        :fulfillment_service,
+        :option1,
+        :option2,
+        :option3,
+        :taxable,
+        :barcode,
+        :grams,
+        :inventory_quantity,
+        :weight_unit,
+        :requires_shipping
       )
-      binding.pry
-      # local_product = MarikaProduct.find_by_handle(row[0].downcase)
-      # shopify_product = ShopifyAPI::Product.find('10155033481') # for test only
-      variant = ShopifyAPI::Variant.new
-      variant.product_id = '10155033481' # local_product.shopify_product_id
-      variant.price = 10
-      variant.sku = 'SKU111'
-      variant.size = 'XS'
-      variant.save
-      if variant.save
+      needed_args[:grams] = needed_args[:grams].to_i
+      needed_args[:inventory_quantity] = needed_args[:inventory_quantity].to_i
+      local_product = MarikaProduct.find_by_handle(raw_args[:handle])
+      needed_args[:product_id] = local_product.shopify_product_id
+      shopify_product = ShopifyAPI::Product.find(local_product.shopify_product_id)
+      variant = ShopifyAPI::Variant.new(**needed_args)
+      shopify_product.variants << variant
+
+      if shopify_product.save
         updated_count += 1
       else
         not_updated_count += 1
@@ -231,40 +241,9 @@ class MarikaProducts
       google_shopping__custom_label_3: :google_shopping__custom_label_3,
       google_shopping__custom_label_4: :google_shopping__custom_label_4,
       variant_image: :variant_image,
-      variant_weight_unit: :weight,
+      variant_weight_unit: :weight_unit,
       variant_tax_code: :variant_tax_code,
       collection: :collection,
       color_id: :color_id }
   end
 end
-
-# Steps to add a new variant:
-# shopify_product = ShopifyAPI::Product.find('10155033481')
-# args = { "product_id"=>'10155033481',
-#     "title"=>"RASPBERRY / Test",
-#     "price"=>"9.99",
-#     "sku"=>"SKUTEST",
-#     "position"=>5,
-#     "inventory_policy"=>"deny",
-#     "compare_at_price"=>nil,
-#     "fulfillment_service"=>"manual",
-#     "inventory_management"=>"shopify",
-#     "option1"=>"RASPBERRY2",
-#     "option2"=>"XL1",
-#     "option3"=>'soft',
-#     "taxable"=>true,
-#     "barcode"=>"",
-#     "grams"=>0,
-#     "image_id"=>22708761609,
-#     "inventory_quantity"=>15,
-#     "weight"=>0.0,
-#     "weight_unit"=>"lb",
-#     "inventory_item_id"=>31394762313,
-#     "old_inventory_quantity"=>15,
-#     "requires_shipping"=>true}
-#
-#   variant = ShopifyAPI::Variant.new(**args.symbolize_keys)
-#
-#   shopify_product.variants << variant
-#
-#   shopify_product.save
