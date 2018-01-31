@@ -111,30 +111,31 @@ class MarikaProducts
 
     CSV.foreach(file["tempfile"].path, headers: true, header_converters: :symbol) do |row|
       raw_args = row.to_hash
-      new_keys_args = raw_args.map { |key, value| [key_map[key], value] }.to_h
-      needed_args = new_keys_args.slice(
+      needed_args = raw_args.slice(
         :title,
-        :price,
-        :sku,
-        :inventory_policy,
-        :compare_at_price,
-        :fulfillment_service,
-        :option1,
-        :option2,
-        :option3,
-        :taxable,
-        :barcode,
-        :grams,
-        :inventory_quantity,
-        :weight_unit,
-        :requires_shipping
+        :variant_price,
+        :variant_sku,
+        :variant_inventory_policy,
+        :variant_compare_at_price,
+        :variant_fulfillment_service,
+        :option1_value,
+        :option2_value,
+        :option3_value,
+        :variant_taxable,
+        :variant_barcode,
+        :variant_grams,
+        :variant_inventory_qty,
+        :variant_weight_unit,
+        :variant_requires_shipping
       )
-      needed_args[:grams] = needed_args[:grams].to_i
-      needed_args[:inventory_quantity] = needed_args[:inventory_quantity].to_i
+
+      new_keys_args = needed_args.map { |key, value| [key_map[key], value] }.to_h
+      new_keys_args[:grams] = new_keys_args[:grams].to_i
+      new_keys_args[:inventory_quantity] = new_keys_args[:inventory_quantity].to_i
       local_product = MarikaProduct.find_by_handle(raw_args[:handle])
-      needed_args[:product_id] = local_product.shopify_product_id
+      new_keys_args[:product_id] = local_product.shopify_product_id
       shopify_product = ShopifyAPI::Product.find(local_product.shopify_product_id)
-      variant = ShopifyAPI::Variant.new(**needed_args)
+      variant = ShopifyAPI::Variant.new(**new_keys_args)
       shopify_product.variants << variant
 
       if shopify_product.save
@@ -198,52 +199,22 @@ class MarikaProducts
   end
 
   def key_map
-    { handle: :handle,
+    {
       title: :title,
-      body_html: :body_html,
-      vendor: :vendor,
-      type: :type,
-      tags: :tags,
-      published: :published,
-      option1_name: :option1_name,
-      option1_value: :option1,
-      option2_name: :option2_name,
-      option2_value: :option2,
-      option3_name: :option3_name,
-      option3_value: :option3,
-      variant_sku: :sku,
-      variant_grams: :grams,
-      variant_inventory_tracker: :variant_inventory_tracker,
-      variant_inventory_qty: :inventory_quantity,
-      variant_inventory_policy: :inventory_policy,
-      variant_fulfillment_service: :fulfillment_service,
       variant_price: :price,
+      variant_sku: :sku,
+      variant_inventory_policy: :inventory_policy,
       variant_compare_at_price: :compare_at_price,
-      variant_requires_shipping: :requires_shipping,
+      variant_fulfillment_service: :fulfillment_service,
+      option1_value: :option1,
+      option2_value: :option2,
+      option3_value: :option3,
       variant_taxable: :taxable,
       variant_barcode: :barcode,
-      image_src: :image_src,
-      image_alt_text: :image_alt_text,
-      gift_card: :gift_card,
-      google_shopping__mpn: :google_shopping__mpn,
-      google_shopping__age_group: :google_shopping__age_group,
-      google_shopping__gender: :google_shopping__gender,
-      google_shopping__google_product_category: :google_shopping__google_product_category,
-      seo_title: :seo_title,
-      seo_description: :seo_description,
-      google_shopping__adwords_grouping: :google_shopping__adwords_grouping,
-      google_shopping__adwords_labels: :google_shopping__adwords_labels,
-      google_shopping__condition: :google_shopping__condition,
-      google_shopping__custom_product: :google_shopping__custom_product,
-      google_shopping__custom_label_0: :google_shopping__custom_label_0,
-      google_shopping__custom_label_1: :google_shopping__custom_label_1,
-      google_shopping__custom_label_2: :google_shopping__custom_label_2,
-      google_shopping__custom_label_3: :google_shopping__custom_label_3,
-      google_shopping__custom_label_4: :google_shopping__custom_label_4,
-      variant_image: :variant_image,
+      variant_grams: :grams,
+      variant_inventory_qty: :inventory_quantity,
       variant_weight_unit: :weight_unit,
-      variant_tax_code: :variant_tax_code,
-      collection: :collection,
-      color_id: :color_id }
+      variant_requires_shipping: :requires_shipping
+    }
   end
 end
