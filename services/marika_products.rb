@@ -13,32 +13,17 @@ class MarikaProducts
     ShopifyAPI::Base.site = "https://#{@apikey}:#{@password}@#{@shopname}.myshopify.com/admin"
   end
 
-  def count_products
+  def save_all_products
     product_count = ShopifyAPI::Product.count
-    puts "We have #{product_count} products"
-    bad_product = 0
-    visible_products = 0
 
     nb_pages = (product_count / 250.0).ceil
     1.upto(nb_pages) do |page|
-      products = ShopifyAPI::Product.find(:all, :params => { :limit => 250, :page => page })
+      products = ShopifyAPI::Product.find(:all, :params => { limit: 250, page: page })
       products.each do |product|
-        puts "#{product.id} | #{product.title} | #{product.published_at}"
-        visible_products += 1 if product.published_at.nil?
-        variants = product.variants
-        variants.each do |variant|
-          puts "#{product.title} -- #{variant.title}, #{variant.inventory_management}, #{variant.inventory_policy}"
-          puts "#{variant.sku}, #{variant.inventory_quantity}, #{variant.old_inventory_quantity}"
-          if variant.inventory_management != 'shopify' && variant.inventory_policy != 'deny'
-            bad_product += 1
-          end
-        end
+        next if MarikaProduct.find_by_shopify_product_id(product.id)
+        MarikaProduct.create(shopify_product_id: product.id, handle: product.handle)
       end
-      puts 'sleeping 3'
-      sleep 3
     end
-    puts "We have #{bad_product} bad products"
-    puts "we have #{visible_products} visible products"
   end
 
   def update_all_products_from_api
@@ -63,7 +48,7 @@ class MarikaProducts
         local_product.update(status: :skipped)
         not_updated_count += 1
       end
-    end 
+    end
     puts "#{updated_count} PRODUCTS UPDATED"
     puts "#{not_updated_count} PRODUCTS DID NOT UPDATE"
   end
@@ -136,19 +121,6 @@ class MarikaProducts
     end
 
     { updated: updated_count, not_updated: not_updated_count }
-  end
-
-  def save_all_products
-    product_count = ShopifyAPI::Product.count
-
-    nb_pages = (product_count / 250.0).ceil
-    1.upto(nb_pages) do |page|
-      products = ShopifyAPI::Product.find(:all, :params => { limit: 250, page: page })
-      products.each do |product|
-        next if MarikaProduct.find_by_shopify_product_id(product.id)
-        MarikaProduct.create(shopify_product_id: product.id, handle: product.handle)
-      end
-    end
   end
 
   private
