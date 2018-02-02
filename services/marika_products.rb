@@ -57,6 +57,7 @@ class MarikaProducts
     not_updated_count = 0
     updated_count = 0
     save_all_products
+    return { updated: updated_count, not_updated: not_updated_count } unless file
 
     CSV.foreach(file["tempfile"].path, headers: false) do |row|
       row.compact!
@@ -83,7 +84,8 @@ class MarikaProducts
     not_updated_count = 0
     updated_count = 0
     save_all_products
-
+    return { updated: updated_count, not_updated: not_updated_count } unless file
+    
     CSV.foreach(file["tempfile"].path, headers: true, header_converters: :symbol) do |row|
       raw_args = row.to_hash
       needed_args = raw_args.slice(
