@@ -88,6 +88,7 @@ module FamProduct
   def add_variants_from_csv(file)
     return_data = return_data_hash
     return return_data unless file
+    save_all_products
     read_rows = []
 
     CSV.foreach(file["tempfile"].path, headers: true, header_converters: :symbol) do |row|
