@@ -39,7 +39,7 @@ class FamProductsUpdate < Sinatra::Base
 
   post '/marika_products/upload_products_csv' do
     result = MarikaProduct.setup('MARIKA').update_all_products_from_csv(params[:attachment])
-    flash[:success] = "#{result[:updated]} products updated and #{result[:not_updated]} did not update."
+    flash[:success] = csv_flash(result)
     redirect '/marika_products/upload_products_csv'
   end
 
@@ -49,7 +49,7 @@ class FamProductsUpdate < Sinatra::Base
 
   post '/marika_products/upload_variants_csv' do
     result = MarikaProduct.setup('MARIKA').add_variants_from_csv(params[:attachment])
-    flash[:success] = "#{result[:updated]} products updated and #{result[:not_updated]} did not update."
+    flash[:success] = csv_flash(result)
     redirect '/marika_products/upload_variants_csv'
   end
 
@@ -59,7 +59,7 @@ class FamProductsUpdate < Sinatra::Base
 
   post '/zobha_products/upload_products_csv' do
     result = ZobhaProduct.setup('ZOBHA').update_all_products_from_csv(params[:attachment])
-    flash[:success] = "#{result[:updated]} products updated and #{result[:not_updated]} did not update."
+    flash[:success] = csv_flash(result)
     redirect '/zobha_products/upload_products_csv'
   end
 
@@ -69,7 +69,7 @@ class FamProductsUpdate < Sinatra::Base
 
   post '/zobha_products/upload_variants_csv' do
     result = ZobhaProduct.setup('ZOBHA').add_variants_from_csv(params[:attachment])
-    flash[:success] = "#{result[:updated]} products updated and #{result[:not_updated]} did not update."
+    flash[:success] = csv_flash(result)
     redirect '/zobha_products/upload_variants_csv'
   end
 end

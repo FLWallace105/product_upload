@@ -52,14 +52,20 @@ module FamProduct
   end
 
   def update_all_products_from_csv(file)
-    return { updated: @updated_count, not_updated: @not_updated_count } unless file
+    return_data = return_data_hash
+    return return_data unless file
+    save_all_products
+    read_rows = []
 
     CSV.foreach(file["tempfile"].path, headers: false) do |row|
       row.compact!
       next if row[0] == 'product_id' # skip the header
+      next if read_rows.include?(row[0].downcase)
+      read_rows << row[0].downcase
       local_product = find_by_handle(row[0].downcase)
       if local_product.nil?
-        @not_updated_count += 1
+        return_data[:not_updated] += 1
+        return_data[:handles_not_found] << row[0].downcase
         next
       end
       shopify_product = ShopifyAPI::Product.find(local_product.shopify_product_id)
@@ -68,21 +74,26 @@ module FamProduct
 
       if shopify_product.save
         local_product.update(body_html: body_html, status: :updated)
-        @updated_count += 1
+        return_data[:updated] += 1
       else
-        @not_updated_count += 1
         local_product.update(status: :skipped)
+        return_data[:products_not_updated] << local_product.shopify_product_id
+        return_data[:not_updated] += 1
       end
     end
 
-    { updated: @updated_count, not_updated: @not_updated_count }
+    return_data
   end
 
   def add_variants_from_csv(file)
-    return { updated: @updated_count, not_updated: @not_updated_count } unless file
+    return_data = return_data_hash
+    return return_data unless file
+    read_rows = []
 
     CSV.foreach(file["tempfile"].path, headers: true, header_converters: :symbol) do |row|
       raw_args = row.to_hash
+      next if read_rows.include?(raw_args[:handle])
+      read_rows << raw_args[:handle]
       needed_args = raw_args.slice(
         :title,
         :variant_price,
@@ -106,7 +117,8 @@ module FamProduct
       new_keys_args[:inventory_quantity] = new_keys_args[:inventory_quantity].to_i
       local_product = find_by_handle(raw_args[:handle])
       if local_product.nil?
-        @not_updated_count += 1
+        return_data[:not_updated] += 1
+        return_data[:handles_not_found] << raw_args[:handle]
         next
       end
       new_keys_args[:product_id] = local_product.shopify_product_id
@@ -115,13 +127,16 @@ module FamProduct
       shopify_product.variants << variant
 
       if shopify_product.save
-        @updated_count += 1
+        local_product.update(status: :updated)
+        return_data[:updated] += 1
       else
-        @not_updated_count += 1
+        local_product.update(status: :skipped)
+        return_data[:products_not_updated] << local_product.shopify_product_id
+        return_data[:not_updated] += 1
       end
     end
 
-    { updated: @updated_count, not_updated: @not_updated_count }
+    return_data
   end
 
   private
@@ -187,6 +202,15 @@ module FamProduct
       variant_inventory_qty: :inventory_quantity,
       variant_weight_unit: :weight_unit,
       variant_requires_shipping: :requires_shipping
+    }
+  end
+
+  def return_data_hash
+    {
+      updated: 0,
+      not_updated: 0,
+      handles_not_found: [],
+      products_not_updated: []
     }
   end
 end
