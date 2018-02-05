@@ -3,3 +3,4 @@
 /config/puma.rb
 /log/*
 /tmp/*
+scratch.json
