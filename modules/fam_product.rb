@@ -20,8 +20,14 @@ module FamProduct
 
     nb_pages = (product_count / 250.0).ceil
     1.upto(nb_pages) do |page|
+      puts "CREDITS LEFT: #{ShopifyAPI.credit_left}"
       products = ShopifyAPI::Product.find(:all, :params => { limit: 250, page: page })
       products.each do |product|
+	if ShopifyAPI.credit_left < 5
+          puts "CREDITS LEFT: #{ShopifyAPI.credit_left}"
+          puts "SLEEPING 10"
+          sleep 10
+        end
         next if find_by_shopify_product_id(product.id)
         create(
           shopify_product_id: product.id,
