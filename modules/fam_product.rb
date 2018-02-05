@@ -180,6 +180,7 @@ module FamProduct
   def save_and_increase_count(local_product, shopify_product)
     if shopify_product.save
       @updated_count += 1
+      local_product.update(status: :updated)
     else
       @not_updated_count += 1
       local_product.update(status: :skipped)
