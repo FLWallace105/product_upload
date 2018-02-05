@@ -1,16 +1,18 @@
 require 'dotenv'
 require 'shopify_api'
-require './models/marika_product'
 require 'csv'
 require 'pry'
 
-class MarikaProducts
-  def initialize
+module FamProduct
+  def setup(store)
     Dotenv.load
-    @apikey = ENV['MARIKA_API_KEY']
-    @password = ENV['MARIKA_PASSWORD']
-    @shopname = ENV['MARIKA_SHOPNAME']
+    @apikey = ENV["#{store}_API_KEY"]
+    @password = ENV["#{store}_PASSWORD"]
+    @shopname = ENV["#{store}_SHOPNAME"]
     ShopifyAPI::Base.site = "https://#{@apikey}:#{@password}@#{@shopname}.myshopify.com/admin"
+    @not_updated_count = 0
+    @updated_count = 0
+    self
   end
 
   def save_all_products
@@ -20,72 +22,65 @@ class MarikaProducts
     1.upto(nb_pages) do |page|
       products = ShopifyAPI::Product.find(:all, :params => { limit: 250, page: page })
       products.each do |product|
-        next if MarikaProduct.find_by_shopify_product_id(product.id)
-        MarikaProduct.create(shopify_product_id: product.id, handle: product.handle)
+        next if find_by_shopify_product_id(product.id)
+        create(
+          shopify_product_id: product.id,
+          handle: product.handle,
+          body_html: product_metafields_html(product),
+          title: product.title
+        )
       end
     end
   end
 
   def update_all_products_from_api
-    puts "We have #{MarikaProduct.count} products"
-    updated_count = 0
-    not_updated_count = 0
+    puts "We have #{count} products"
 
-    MarikaProduct.find_each do |local_product|
+    find_each do |local_product|
       shopify_product = ShopifyAPI::Product.find(local_product.shopify_product_id)
-      body_html = product_metafields_html(shopify_product)
 
-      if body_html
-        shopify_product.body_html = body_html
-        if shopify_product.save
-          local_product.update(body_html: body_html, status: :updated)
-          updated_count += 1
-        else
-          not_updated_count += 1
-          local_product.update(status: :skipped)
-        end
+      if local_product.body_html.present?
+        shopify_product.body_html = local_product.body_html
+        save_and_increase_count(local_product, shopify_product)
       else
         local_product.update(status: :skipped)
-        not_updated_count += 1
+        @not_updated_count += 1
       end
     end
-    puts "#{updated_count} PRODUCTS UPDATED"
-    puts "#{not_updated_count} PRODUCTS DID NOT UPDATE"
+    puts "#{@updated_count} PRODUCTS UPDATED"
+    puts "#{@not_updated_count} PRODUCTS DID NOT UPDATE"
   end
 
   def update_all_products_from_csv(file)
-    not_updated_count = 0
-    updated_count = 0
-    save_all_products
-    return { updated: updated_count, not_updated: not_updated_count } unless file
+    return { updated: @updated_count, not_updated: @not_updated_count } unless file
 
     CSV.foreach(file["tempfile"].path, headers: false) do |row|
       row.compact!
       next if row[0] == 'product_id' # skip the header
-      local_product = MarikaProduct.find_by_handle(row[0].downcase)
-
+      local_product = find_by_handle(row[0].downcase)
+      if local_product.nil?
+        @not_updated_count += 1
+        next
+      end
       shopify_product = ShopifyAPI::Product.find(local_product.shopify_product_id)
       body_html = csv_unordered_list(row)
       shopify_product.body_html = body_html
 
       if shopify_product.save
         local_product.update(body_html: body_html, status: :updated)
-        updated_count += 1
+        @updated_count += 1
       else
-        not_updated_count += 1
+        @not_updated_count += 1
         local_product.update(status: :skipped)
       end
     end
 
-    { updated: updated_count, not_updated: not_updated_count }
+    { updated: @updated_count, not_updated: @not_updated_count }
   end
 
   def add_variants_from_csv(file)
-    not_updated_count = 0
-    updated_count = 0
-    save_all_products
-    return { updated: updated_count, not_updated: not_updated_count } unless file
-    
+    return { updated: @updated_count, not_updated: @not_updated_count } unless file
+
     CSV.foreach(file["tempfile"].path, headers: true, header_converters: :symbol) do |row|
       raw_args = row.to_hash
       needed_args = raw_args.slice(
@@ -109,20 +104,24 @@ class MarikaProducts
       new_keys_args = needed_args.map { |key, value| [key_map[key], value] }.to_h
       new_keys_args[:grams] = new_keys_args[:grams].to_i
       new_keys_args[:inventory_quantity] = new_keys_args[:inventory_quantity].to_i
-      local_product = MarikaProduct.find_by_handle(raw_args[:handle])
+      local_product = find_by_handle(raw_args[:handle])
+      if local_product.nil?
+        @not_updated_count += 1
+        next
+      end
       new_keys_args[:product_id] = local_product.shopify_product_id
       shopify_product = ShopifyAPI::Product.find(local_product.shopify_product_id)
       variant = ShopifyAPI::Variant.new(**new_keys_args)
       shopify_product.variants << variant
 
       if shopify_product.save
-        updated_count += 1
+        @updated_count += 1
       else
-        not_updated_count += 1
+        @not_updated_count += 1
       end
     end
 
-    { updated: updated_count, not_updated: not_updated_count }
+    { updated: @updated_count, not_updated: @not_updated_count }
   end
 
   private
@@ -131,7 +130,7 @@ class MarikaProducts
     metafield_data = ShopifyAPI::Metafield.all(params: { resource: 'products', resource_id: product.id, fields: 'key, value' })
 
     if metafield_data.empty?
-      puts "NO METADATA FOR PRODUCT_ID: #{product.id}"
+      puts "NO METADATA FOR SHOPIFY_PRODUCT_ID: #{product.id}"
     else
       unordered_list = api_unordered_list(metafield_data)
     end
@@ -160,6 +159,15 @@ class MarikaProducts
     end
 
     ul << '</ul>'
+  end
+
+  def save_and_increase_count(local_product, shopify_product)
+    if shopify_product.save
+      @updated_count += 1
+    else
+      @not_updated_count += 1
+      local_product.update(status: :skipped)
+    end
   end
 
   def key_map
