@@ -23,11 +23,7 @@ module FamProduct
       puts "CREDITS LEFT: #{ShopifyAPI.credit_left}"
       products = ShopifyAPI::Product.find(:all, :params => { limit: 250, page: page })
       products.each do |product|
-	if ShopifyAPI.credit_left < 5
-          puts "CREDITS LEFT: #{ShopifyAPI.credit_left}"
-          puts "SLEEPING 10"
-          sleep 10
-        end
+        shopify_api_throttle
         next if find_by_shopify_product_id(product.id)
         create(
           shopify_product_id: product.id,
@@ -43,6 +39,7 @@ module FamProduct
     puts "We have #{count} products"
 
     find_each do |local_product|
+      shopify_api_throttle
       shopify_product = ShopifyAPI::Product.find(local_product.shopify_product_id)
 
       if local_product.body_html.present?
@@ -74,6 +71,7 @@ module FamProduct
         return_data[:handles_not_found] << row[0].downcase
         next
       end
+      shopify_api_throttle
       shopify_product = ShopifyAPI::Product.find(local_product.shopify_product_id)
       body_html = csv_unordered_list(row)
       shopify_product.body_html = body_html
@@ -129,6 +127,7 @@ module FamProduct
         next
       end
       new_keys_args[:product_id] = local_product.shopify_product_id
+      shopify_api_throttle
       shopify_product = ShopifyAPI::Product.find(local_product.shopify_product_id)
       variant = ShopifyAPI::Variant.new(**new_keys_args)
       shopify_product.variants << variant
@@ -220,5 +219,13 @@ module FamProduct
       handles_not_found: [],
       products_not_updated: []
     }
+  end
+
+  def shopify_api_throttle
+    if ShopifyAPI.credit_left < 5
+      puts "CREDITS LEFT: #{ShopifyAPI.credit_left}"
+      puts "SLEEPING 10"
+      sleep 10
+    end
   end
 end
