@@ -25,7 +25,7 @@ module FamProduct
       products.each do |product|
         shopify_api_throttle
         next if find_by_shopify_product_id(product.id)
-        create(
+        puts create(
           shopify_product_id: product.id,
           handle: product.handle,
           body_html: product_metafields_html(product),
