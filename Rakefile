@@ -15,6 +15,12 @@ namespace :marika do
   task :update_all_products_from_api do |_t|
     MarikaProduct.setup('MARIKA').update_all_products_from_api
   end
+
+  desc 'delete all Marika products and reset the marika_products table index'
+  task :delete_all_and_reindex do |_t|
+    MarikaProduct.delete_all
+    ActiveRecord::Base.connection.reset_pk_sequence!('marika_products')
+  end
 end
 
 namespace :zobha do
@@ -27,6 +33,12 @@ namespace :zobha do
   desc "after running the save_all_products task, this will map each local_product's body_html to the body_html of the matching product in Shopify."
   task :update_all_products_from_api do |_t|
     ZobhaProduct.setup('ZOBHA').update_all_products_from_api
+  end
+
+  desc 'delete all Zobha products and reset the zoba_products table index'
+  task :delete_all_and_reindex do |_t|
+    ZobhaProduct.delete_all
+    ActiveRecord::Base.connection.reset_pk_sequence!('zobha_products')
   end
 end
 

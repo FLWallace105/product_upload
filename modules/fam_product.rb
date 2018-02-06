@@ -46,8 +46,9 @@ module FamProduct
         shopify_product.body_html = local_product.body_html
         save_and_increase_count(local_product, shopify_product)
       else
-        local_product.update(status: :skipped)
+        local_product.update(updated: false)
         @not_updated_count += 1
+        puts "DID NOT UPDATE: #{shopify_product.title}, #{shopify_product.id}"
       end
     end
     puts "#{@updated_count} PRODUCTS UPDATED"
@@ -77,10 +78,10 @@ module FamProduct
       shopify_product.body_html = body_html
 
       if shopify_product.save
-        local_product.update(body_html: body_html, status: :updated)
+        local_product.update(body_html: body_html, updated: true)
         return_data[:updated] += 1
       else
-        local_product.update(status: :skipped)
+        local_product.update(updated: false)
         return_data[:products_not_updated] << local_product.shopify_product_id
         return_data[:not_updated] += 1
       end
@@ -133,10 +134,10 @@ module FamProduct
       shopify_product.variants << variant
 
       if shopify_product.save
-        local_product.update(status: :updated)
+        local_product.update(updated: true)
         return_data[:updated] += 1
       else
-        local_product.update(status: :skipped)
+        local_product.update(updated: false)
         return_data[:products_not_updated] << local_product.shopify_product_id
         return_data[:not_updated] += 1
       end
@@ -185,10 +186,12 @@ module FamProduct
   def save_and_increase_count(local_product, shopify_product)
     if shopify_product.save
       @updated_count += 1
-      local_product.update(status: :updated)
+      local_product.update(updated: true)
+      puts "UPDATED: #{shopify_product.title}, #{shopify_product.id}"
     else
       @not_updated_count += 1
-      local_product.update(status: :skipped)
+      local_product.update(updated: false)
+      puts "DID NOT UPDATE: #{shopify_product.title}, #{shopify_product.id}"
     end
   end
 

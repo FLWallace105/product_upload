@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180204235529) do
+ActiveRecord::Schema.define(version: 20180206003254) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -19,7 +19,7 @@ ActiveRecord::Schema.define(version: 20180204235529) do
     t.string "shopify_product_id"
     t.string "title"
     t.text "body_html"
-    t.integer "status", default: 0
+    t.boolean "updated", default: false
     t.string "handle"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -29,7 +29,7 @@ ActiveRecord::Schema.define(version: 20180204235529) do
     t.string "shopify_product_id"
     t.string "title"
     t.text "body_html"
-    t.integer "status", default: 0
+    t.boolean "updated", default: false
     t.string "handle"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
