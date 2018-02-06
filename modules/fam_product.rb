@@ -25,12 +25,13 @@ module FamProduct
       products.each do |product|
         shopify_api_throttle
         next if find_by_shopify_product_id(product.id)
-        puts create(
+        local_product = create(
           shopify_product_id: product.id,
           handle: product.handle,
           body_html: product_metafields_html(product),
           title: product.title
         )
+        puts "CREATED: #{local_product.title}, #{local_product.shopify_product_id}" if local_product&.persisted?
       end
     end
   end
@@ -59,13 +60,13 @@ module FamProduct
     return_data = return_data_hash
     return return_data unless file
     save_all_products
-    read_rows = []
+    read_handles = []
 
     CSV.foreach(file["tempfile"].path, headers: false) do |row|
       row.compact!
       next if row[0] == 'product_id' # skip the header
-      next if read_rows.include?(row[0].downcase)
-      read_rows << row[0].downcase
+      next if read_handles.include?(row[0].downcase)
+      read_handles << row[0].downcase
       local_product = find_by_handle(row[0].downcase)
       if local_product.nil?
         return_data[:not_updated] += 1
@@ -94,12 +95,12 @@ module FamProduct
     return_data = return_data_hash
     return return_data unless file
     save_all_products
-    read_rows = []
+    read_handles = []
 
     CSV.foreach(file["tempfile"].path, headers: true, header_converters: :symbol) do |row|
       raw_args = row.to_hash
-      next if read_rows.include?(raw_args[:handle])
-      read_rows << raw_args[:handle]
+      next if read_handles.include?(raw_args[:handle])
+      read_handles << raw_args[:handle]
       needed_args = raw_args.slice(
         :title,
         :variant_price,
@@ -225,10 +226,9 @@ module FamProduct
   end
 
   def shopify_api_throttle
-    if ShopifyAPI.credit_left < 5
-      puts "CREDITS LEFT: #{ShopifyAPI.credit_left}"
-      puts "SLEEPING 10"
-      sleep 10
-    end
+    return if ShopifyAPI.credit_left > 5
+    puts "CREDITS LEFT: #{ShopifyAPI.credit_left}"
+    puts "SLEEPING 10"
+    sleep 10
   end
 end
