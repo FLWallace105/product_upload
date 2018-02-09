@@ -24,7 +24,7 @@ module FamProduct
         next if find_by_shopify_product_id(product.id)
         local_product = create(
           shopify_product_id: product.id,
-          handle: product.handle,
+          handle: product.handle.downcase,
           body_html: product_metafields_html(product),
           title: product.title
         )
