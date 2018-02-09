@@ -101,6 +101,7 @@ module FamProduct
       new_keys_args = needed_args.map { |key, value| [product_variant_key_map[key], value] }.to_h
       new_keys_args[:grams] = new_keys_args[:grams].to_i
       new_keys_args[:inventory_quantity] = new_keys_args[:inventory_quantity].to_i
+      new_keys_args[:inventory_management] = "shopify"
 
       local_product = find_by_handle(raw_args[:handle].downcase)
       if local_product.nil?
