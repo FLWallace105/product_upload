@@ -1,5 +1,5 @@
 module RouteHelper
-  def csv_flash(result)
+  def updated_product_via_csv(result)
     "#{result[:updated]} products updated and
     #{result[:not_updated]} did not update.
     #{result[:handles_not_found].empty? ? nil : "Handles not found: #{result[:handles_not_found].to_sentence}"}
