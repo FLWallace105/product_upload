@@ -92,12 +92,9 @@ module FamProduct
     return_data = return_data_hash
     return return_data unless file
     save_all_products
-    read_handles = []
 
     CSV.foreach(file["tempfile"].path, headers: true, header_converters: :symbol) do |row|
       raw_args = row.to_hash
-      next if read_handles.include?(raw_args[:handle])
-      read_handles << raw_args[:handle]
 
       # argument manipulation:
       needed_args = product_variant_needed_args(raw_args)
