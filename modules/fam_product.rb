@@ -6,10 +6,7 @@ require 'pry'
 module FamProduct
   def setup(store)
     Dotenv.load
-    @apikey = ENV["#{store}_API_KEY"]
-    @password = ENV["#{store}_PASSWORD"]
-    @shopname = ENV["#{store}_SHOPNAME"]
-    ShopifyAPI::Base.site = "https://#{@apikey}:#{@password}@#{@shopname}.myshopify.com/admin"
+    ShopifyAPI::Base.site = "https://#{ENV["#{store}_API_KEY"]}:#{ENV["#{store}_PASSWORD"]}@#{ENV["#{store}_SHOPNAME"]}.myshopify.com/admin"
     @not_updated_count = 0
     @updated_count = 0
     self
@@ -101,34 +98,21 @@ module FamProduct
       raw_args = row.to_hash
       next if read_handles.include?(raw_args[:handle])
       read_handles << raw_args[:handle]
-      needed_args = raw_args.slice(
-        :title,
-        :variant_price,
-        :variant_sku,
-        :variant_inventory_policy,
-        :variant_compare_at_price,
-        :variant_fulfillment_service,
-        :option1_value,
-        :option2_value,
-        :option3_value,
-        :variant_taxable,
-        :variant_barcode,
-        :variant_grams,
-        :variant_inventory_qty,
-        :variant_weight_unit,
-        :variant_requires_shipping
-      )
 
-      new_keys_args = needed_args.map { |key, value| [key_map[key], value] }.to_h
+      # argument manipulation:
+      needed_args = product_variant_needed_args(raw_args)
+      new_keys_args = needed_args.map { |key, value| [product_variant_key_map[key], value] }.to_h
       new_keys_args[:grams] = new_keys_args[:grams].to_i
       new_keys_args[:inventory_quantity] = new_keys_args[:inventory_quantity].to_i
-      local_product = find_by_handle(raw_args[:handle])
+
+      local_product = find_by_handle(raw_args[:handle].downcase)
       if local_product.nil?
         return_data[:not_updated] += 1
         return_data[:handles_not_found] << raw_args[:handle]
         next
       end
       new_keys_args[:product_id] = local_product.shopify_product_id
+
       shopify_api_throttle
       shopify_product = ShopifyAPI::Product.find(local_product.shopify_product_id)
       variant = ShopifyAPI::Variant.new(**new_keys_args)
@@ -196,7 +180,27 @@ module FamProduct
     end
   end
 
-  def key_map
+  def product_variant_needed_args(raw_args)
+    raw_args.slice(
+      :title,
+      :variant_price,
+      :variant_sku,
+      :variant_inventory_policy,
+      :variant_compare_at_price,
+      :variant_fulfillment_service,
+      :option1_value,
+      :option2_value,
+      :option3_value,
+      :variant_taxable,
+      :variant_barcode,
+      :variant_grams,
+      :variant_inventory_qty,
+      :variant_weight_unit,
+      :variant_requires_shipping
+    )
+  end
+
+  def product_variant_key_map
     {
       title: :title,
       variant_price: :price,
