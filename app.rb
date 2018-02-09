@@ -94,15 +94,4 @@ class FamProductsUpdate < Sinatra::Base
     flash[:success] = updated_product_via_csv(result)
     redirect '/ellie_staging/upload_variants_csv'
   end
-
-  # TODO:: Delete routes:
-  # get '/ellie_staging/new_product_csv' do
-  #   erb :'ellie_staging/new_product_csv', layout: :'layouts/application'
-  # end
-
-  # post '/ellie_staging/new_product_csv' do
-  #   result = EllieStagingProduct.setup('ELLIE_STAGING').create_product_from_csv(params[:attachment])
-  #   flash[:success] = created_product_via_csv(result)
-  #   redirect '/ellie_staging/new_product_csv'
-  # end
 end

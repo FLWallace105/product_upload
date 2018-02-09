@@ -88,44 +88,6 @@ module FamProduct
     return_data
   end
 
-  # TODO:: Delete method
-  # def create_product_from_csv(file)
-  #   return_data = { created: 0, not_created: 0 }
-  #   return return_data unless file
-  #   read_handles = []
-  #
-  #   CSV.foreach(file["tempfile"].path, headers: true, header_converters: :symbol) do |row|
-  #     raw_args = row.to_hash
-  #     next if read_handles.include?(raw_args[:handle])
-  #     read_handles << raw_args[:handle]
-  #
-  #     # argument manipulation:
-  #     needed_args = product_needed_args(raw_args)
-  #     new_keys_args = needed_args.map { |key, value| [product_key_map[key], value] }.to_h
-  #     new_keys_args[:handle] = raw_args[:handle].downcase
-  #     new_keys_args[:published_at] = nil if raw_args[:published] == "0"
-  #     shopify_api_throttle
-  #     shopify_product = ShopifyAPI::Product.new(**new_keys_args)
-  #     shopify_collection = ShopifyAPI::CustomCollection.where(title: raw_args[:title]).first
-  #     if shopify_collection
-  #       shopify_collection.add_product(shopify_product)
-  #     end
-  #     if shopify_product.save
-  #       return_data[:created] += 1
-  #       create(
-  #         shopify_product_id: shopify_product.id,
-  #         handle: shopify_product.handle,
-  #         body_html: product_metafields_html(shopify_product),
-  #         title: shopify_product.title
-  #       )
-  #     else
-  #       return_data[:not_created] += 1
-  #     end
-  #   end
-  #
-  #   return_data
-  # end
-
   def add_variants_from_csv(file)
     return_data = return_data_hash
     return return_data unless file
@@ -273,23 +235,4 @@ module FamProduct
     puts "SLEEPING 10"
     sleep 10
   end
-
-  # TODO:: delte these: methods
-  # def product_needed_args(raw_args)
-  #   raw_args.slice(
-  #     :handle,
-  #     :title,
-  #     :vendor,
-  #     :type
-  #   )
-  # end
-  #
-  # def product_key_map
-  #   {
-  #     handle: :handle,
-  #     title: :title,
-  #     vendor: :vendor,
-  #     type: :product_type
-  #   }
-  # end
 end
