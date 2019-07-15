@@ -1,8 +1,9 @@
 source "https://rubygems.org"
-ruby '2.4.1'
+ruby '2.6.3'
 
 # Server
-gem 'sinatra', '~> 2.0'
+gem "sinatra", ">= 2.0.2"
+gem "rack", ">= 2.0.6"
 gem 'sinatra-flash', '~> 0.3.0'
 gem 'sinatra-contrib', '~> 2.0'
 gem 'sinatra-flash', '~> 0.3.0'
