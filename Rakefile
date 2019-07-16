@@ -4,6 +4,7 @@ require "sinatra/activerecord/rake"
 require_relative 'models/marika_product'
 require_relative 'models/zobha_product'
 require_relative 'models/ellie_staging_product'
+require_relative 'models/threedots_product'
 
 namespace :marika do
   desc 'saves shopify_product_id, handle, body_html, and title, from Shopify to the local database'
@@ -41,6 +42,29 @@ namespace :zobha do
     ZobhaProduct.delete_all
     ActiveRecord::Base.connection.reset_pk_sequence!('zobha_products')
   end
+end
+
+namespace :threedots do
+  desc 'saves shopify_product_id, handle, body_html, and title, from Shopify to the local database'
+  task :save_all_products do |_t|
+    ThreedotsProduct.setup('THREEDOTS').save_all_products
+    puts "#{ThreedotsProduct.count} PRODUCTS ARE IN THE DATABASE"
+  end
+
+  desc "after running the save_all_products task, this will map each local_product's body_html to the body_html of the matching product in Shopify."
+  task :update_all_products_from_api do |_t|
+    ThreedotsProduct.setup('THREEDOTS').update_all_products_from_api
+  end
+
+  desc 'delete all Threedots products and reset the threedots_products table index'
+  task :delete_all_and_reindex do |_t|
+    ThreedotsProduct.delete_all
+    ActiveRecord::Base.connection.reset_pk_sequence!('threedots_products')
+  end
+
+
+
+
 end
 
 namespace :ellie_staging do

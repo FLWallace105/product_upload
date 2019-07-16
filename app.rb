@@ -11,6 +11,7 @@ require_relative 'helpers/route_helper'
 require_relative 'models/marika_product'
 require_relative 'models/zobha_product'
 require_relative 'models/ellie_staging_product'
+require_relative 'models/threedots_product'
 
 class FamProductsUpdate < Sinatra::Base
   register Sinatra::ActiveRecordExtension
@@ -73,6 +74,28 @@ class FamProductsUpdate < Sinatra::Base
     flash[:success] = updated_product_via_csv(result)
     redirect '/zobha_products/upload_variants_csv'
   end
+
+  #routes below are added for Threedots
+  get '/threedots_products/upload_products_csv' do
+    erb :'threedots_products/upload_products_csv', layout: :'layouts/application'
+  end
+
+  post '/threedots_products/upload_products_csv' do
+    result = ThreedotsProduct.setup('THREEDOTS').update_all_products_from_csv(params[:attachment])
+    flash[:success] = updated_product_via_csv(result)
+    redirect '/threedots_products/upload_products_csv'
+  end
+
+  get '/threedots_products/upload_variants_csv' do
+    erb :'threedots_products/upload_variants_csv', layout: :'layouts/application'
+  end
+
+  post '/threedots_products/upload_variants_csv' do
+    result = ThreedotsProduct.setup('THREEDOTS').add_variants_from_csv(params[:attachment])
+    flash[:success] = updated_product_via_csv(result)
+    redirect '/threedots_products/upload_variants_csv'
+  end
+
 
   # The Routes Below Are For Testing
   get '/ellie_staging/upload_products_csv' do
