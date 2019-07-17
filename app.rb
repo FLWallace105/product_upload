@@ -24,12 +24,20 @@ class FamProductsUpdate < Sinatra::Base
     enable :sessions
     Dotenv.load
     set :server, :puma
+    @username = ENV['USERNAME']
+    @password = ENV['PASSWORD']
   end
 
   configure :development do
     register Sinatra::Reloader
     also_reload '/public/**/*'
   end
+
+  
+  use Rack::Auth::Basic, "Protected Area" do |username, password|
+    username == @username && password == @password
+  end
+  
 
   get '/' do
     'Hello Fam Brands'
@@ -117,4 +125,6 @@ class FamProductsUpdate < Sinatra::Base
     flash[:success] = updated_product_via_csv(result)
     redirect '/ellie_staging/upload_variants_csv'
   end
+
+
 end
