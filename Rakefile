@@ -5,6 +5,7 @@ require_relative 'models/marika_product'
 require_relative 'models/zobha_product'
 require_relative 'models/ellie_staging_product'
 require_relative 'models/threedots_product'
+require_relative 'models/ellie_product'
 
 namespace :marika do
   desc 'saves shopify_product_id, handle, body_html, and title, from Shopify to the local database'
@@ -62,10 +63,28 @@ namespace :threedots do
     ActiveRecord::Base.connection.reset_pk_sequence!('threedots_products')
   end
 
+end
 
+namespace :ellie do
+  desc 'saves shopify_product_id, handle, body_html, and title, from Shopify to the local database'
+  task :save_all_products do |_t|
+    EllieProduct.setup('ELLIE').save_all_products
+    puts "#{EllieProduct.count} PRODUCTS ARE IN THE DATABASE"
+  end
 
+  desc "after running the save_all_products task, this will map each local_product's body_html to the body_html of the matching product in Shopify."
+  task :update_all_products_from_api do |_t|
+    EllieProduct.setup('ELLIE').update_all_products_from_api
+  end
+
+  desc 'delete all Ellie products and reset the threedots_products table index'
+  task :delete_all_and_reindex do |_t|
+    EllieProduct.delete_all
+    ActiveRecord::Base.connection.reset_pk_sequence!('ellie_products')
+  end
 
 end
+
 
 namespace :ellie_staging do
   desc 'saves shopify_product_id, handle, body_html, and title, from Shopify to the local database'
