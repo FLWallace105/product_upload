@@ -6,7 +6,7 @@ gem "sinatra", ">= 2.0.2"
 gem "rack", ">= 2.0.6"
 gem 'sinatra-flash', '~> 0.3.0'
 gem 'sinatra-contrib', '~> 2.0'
-gem 'puma', '~> 3.11'
+gem 'puma', '~> 3.12'
 
 # Database
 gem 'activesupport', '~> 5.0'
