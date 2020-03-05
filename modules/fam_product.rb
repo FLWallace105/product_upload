@@ -7,6 +7,7 @@ module FamProduct
   def setup(store)
     Dotenv.load
     ShopifyAPI::Base.site = "https://#{ENV["#{store}_API_KEY"]}:#{ENV["#{store}_PASSWORD"]}@#{ENV["#{store}_SHOPNAME"]}.myshopify.com/admin"
+    ShopifyAPI::Base.api_version = '2019-10'
     @not_updated_count = 0
     @updated_count = 0
     self
@@ -15,10 +16,25 @@ module FamProduct
   def save_all_products
     product_count = ShopifyAPI::Product.count
 
-    nb_pages = (product_count / 250.0).ceil
-    1.upto(nb_pages) do |page|
-      puts "CREDITS LEFT: #{ShopifyAPI.credit_left}"
-      products = ShopifyAPI::Product.find(:all, :params => { limit: 250, page: page })
+    #New code for api
+    products = ShopifyAPI::Product.find(:all)
+    #First page
+    products.each do |product|
+      shopify_api_throttle
+        next if find_by_shopify_product_id(product.id)
+        local_product = create(
+          shopify_product_id: product.id,
+          handle: product.handle.downcase,
+          body_html: product_metafields_html(product),
+          title: product.title
+        )
+        puts "CREATED: #{local_product.title}, #{local_product.shopify_product_id}" if local_product&.persisted?
+
+
+    end
+
+    while products.next_page?
+      products = products.fetch_next_page
       products.each do |product|
         shopify_api_throttle
         next if find_by_shopify_product_id(product.id)
@@ -29,8 +45,33 @@ module FamProduct
           title: product.title
         )
         puts "CREATED: #{local_product.title}, #{local_product.shopify_product_id}" if local_product&.persisted?
+
       end
     end
+
+
+
+
+    #nb_pages = (product_count / 250.0).ceil
+    #1.upto(nb_pages) do |page|
+    #  puts "CREDITS LEFT: #{ShopifyAPI.credit_left}"
+    #  products = ShopifyAPI::Product.find(:all, :params => { limit: 250, page: page })
+    #  products.each do |product|
+    #    shopify_api_throttle
+    #    next if find_by_shopify_product_id(product.id)
+    #    local_product = create(
+    #      shopify_product_id: product.id,
+    #      handle: product.handle.downcase,
+    #      body_html: product_metafields_html(product),
+    #      title: product.title
+    #    )
+    #    puts "CREATED: #{local_product.title}, #{local_product.shopify_product_id}" if local_product&.persisted?
+    #  end
+    #end
+    
+
+
+
   end
 
   def update_all_products_from_api
